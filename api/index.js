@@ -1,7 +1,19 @@
 // Build an apiRouter using express Router
-
+const dotenv = require('dotenv').config();
+const express= require('express');
+const apiRouter = express.Router();
 
 // Import the database adapter functions from the db
+const {
+
+    client, 
+    getOpenReports, 
+    createReport,
+    closeReport,
+    createReportComment
+
+} = require('../db')
+
 
 
 /**
@@ -14,6 +26,27 @@
  */
 
 
+apiRouter.get('/reports', async (req, res) => {
+
+    const allReports = await getOpenReports();
+
+    const reports = allReports.filter(report =>{
+        if (report.isOpen){
+         return true;
+        }
+        if (report.isExpired === false){
+          return true;
+        }
+        return false;
+      })
+    console.log(allReports)
+    res.send({
+        reports
+    });
+
+});
+  
+
 
 /**
  * Set up a POST request for /reports
@@ -24,6 +57,27 @@
  * - on caught error, call next(error)
  */
 
+ apiRouter.post('/reports',  async (req, res, next) => {
+    const { title, location, description, password } = req.body;
+  
+    const reportData = { 
+      title, 
+      location, 
+      description,
+      password
+     }
+     console.log("the report data is:", reportData)
+    try {
+      const reportToPost = await createReport(reportData);
+
+      res.send (
+        { reportToPost }
+        );
+
+    } catch (error) {
+      next(new Error("Request failed with status code 500"));
+    }
+});
 
 
 /**
@@ -36,7 +90,19 @@
  * - on caught error, call next(error)
  */
 
+ apiRouter.delete('/reports/:reportId', async (req, res, next) => {
+    const { reportId } = req.params;
+    const { password } = req.body;
 
+    try {
+      const closedReport = await closeReport(reportId, password);
+  
+        res.send({ closedReport });
+  
+    } catch (error) {
+      next(new Error("Request failed with status code 500"))
+    }
+  });
 
 /**
  * Set up a POST request for /reports/:reportId/comments
@@ -48,6 +114,13 @@
  * - on caught error, call next(error)
  */
 
+//  apiRouter.use((error, req, res, next) => {
+//     res.send({
+//         name: error.name, 
+//         message: error.message
+//     });
+// });
 
 
 // Export the apiRouter
+module.exports = apiRouter;

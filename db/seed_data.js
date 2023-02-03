@@ -4,6 +4,7 @@
 const {
   client,
   createReport,
+  _getReport,
   closeReport,
   getOpenReports,
   createReportComment
